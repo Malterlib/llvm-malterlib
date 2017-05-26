@@ -1,8 +1,3 @@
-[submodule "Malterlib_Tools"]
-	path = Malterlib/Tools
-	url = https://github.com/Malterlib/Malterlib_Tools
-	branch = master
-	fetchRecurseSubmodules = on-demand
 [submodule "External_llvm"]
 	path = llvm/llvm
 	url = https://github.com/Malterlib/llvm.git
