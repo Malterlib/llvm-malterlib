@@ -1,3 +1,193 @@
 #!/bin/bash
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-"$DIR/Malterlib/Tools/Scripts/mib" "$@"
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+  SourceDir="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$SourceDir/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+done
+SourceDir="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+Command=$1
+shift
+
+#Rest="$@"
+
+#echo Command: $Command
+#echo Rest: "$Rest"
+
+SubModules="Algorithm Atomic Bit BuildSystem Cloud CommandLine Compression Concurrency Container Contract Core CrashReport Cryptography Daemon Database Debug Desktop Documentation Encoding Exception File Function Graphics Instrumentation InterProcess Intrusive Iterator Log Memory Meta Meteor Mongo Network Numeric Perforce Preprocessor Process SQL STL Security Storage Stream String System Test Thread Time Tools Type Web XML"
+
+function SetupMibScript()
+{
+	if [ ! -f "./mib" ] ; then
+		echo '#!/bin/bash' > ./mib
+		echo 'DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"' >> ./mib
+		echo '"$DIR/Malterlib/Tools/Scripts/mib" "$@"' >> ./mib
+		chmod +x ./mib
+		git add mib
+	fi
+}
+
+function SetupMalterlib()
+{
+	if [ ! -d "./Malterlib/Tools" ] ; then
+		echo Adding Tools submodule
+		git submodule add -b master --name "Malterlib_Tools" https://github.com/Malterlib/Malterlib_Tools Malterlib/Tools
+		git config -f .gitmodules submodule.Malterlib_Tools.fetchRecurseSubmodules on-demand
+	fi
+
+	SetupMibScript
+
+	if [[ "${SourceDir}" != "$PWD/Malterlib/Tools/Scripts" ]] ; then
+		echo NOT SELF, relaunching \("${SourceDir}" != "$PWD/Malterlib/Tools/Scripts"\)
+		#./mib setup "$@"
+		#exit $?
+	fi
+
+	if [ ! -d "SDK" ] ; then
+		git submodule add -b master --name "MalterlibSDK" https://github.com/Malterlib/MalterlibSDK SDK
+		git config -f .gitmodules submodule.MalterlibSDK.fetchRecurseSubmodules on-demand
+	fi
+
+	for Module in $SubModules ; do
+		if [ ! -d "./Malterlib/${Module}" ] ; then
+			git submodule add -f -b master --name "Malterlib_${Module}" https://github.com/Malterlib/Malterlib_${Module} Malterlib/${Module}
+			git config -f .gitmodules submodule.Malterlib_${Module}.fetchRecurseSubmodules on-demand
+		fi
+	done
+
+	git submodule foreach 'git checkout master || :'
+
+	git add .gitmodules
+
+	return 0
+}
+
+function AddRemoteDo()
+{
+	pushd "$2" > /dev/null
+	git remote add $3 $4/$1.git
+	popd > /dev/null
+}
+
+function AddRemote()
+{
+	AddRemoteDo Malterlib ""  $1 $2
+	AddRemoteDo MalterlibSDK SDK $1 $2
+	for Module in $SubModules ; do
+		AddRemoteDo Malterlib_$Module Malterlib/$Module $1 $2
+	done
+}
+
+function AddLocalRemoteDo()
+{
+	pushd "$2" > /dev/null
+	git remote add $3 $4$1
+	popd > /dev/null
+}
+
+function AddLocalRemote()
+{
+	AddLocalRemoteDo "" ""  $1 $2
+	AddLocalRemoteDo /SDK SDK $1 $2
+	for Module in $SubModules ; do
+		AddLocalRemoteDo /Malterlib/$Module Malterlib/$Module $1 $2
+	done
+}
+
+function AddModule()
+{
+	RepoName=Malterlib_$1
+	mkdir -p "Malterlib/$1"
+	cp "LICENSE.Malterlib" "Malterlib/$1"
+	pushd "Malterlib/$1" > /dev/null
+	git init
+	git add .
+	git commit -m "[Malterlib/$1] Add $1 module" || true
+	popd > /dev/null
+	
+	IFS=$'\n' && 
+	(
+		for Remote in `git remote -v | awk '{print $1 " " $2}' | sort | uniq`; do
+			RemoteName=`echo "$Remote" | awk '{print $1}'`
+			RemoteURL=`echo "$Remote" | awk '{print $2}'`
+			NewRemoteURL=`echo "$RemoteURL"| sed -e 's/\(.*\)Malterlib$/\1_RepoName_/g' | sed -e 's/\(.*\)Malterlib.git$/\1_RepoName_.git/g'`
+			NewRemoteURL="${NewRemoteURL/_RepoName_/$RepoName}"
+			if [[ "$RemoteURL" =~ ^https://github.com/.* ]]; then
+				if [[ "$GithubAPIToken" == "" ]]; then
+					echo Github API token for $NewRemoteURL
+					read GithubAPIToken
+				fi
+				Owner=`echo $RemoteURL | awk -F '/' '{print $4}'`
+				Repo=`echo $RemoteURL | awk -F '/' '{print $5}'`
+
+				RepoInfo=`curl -sS "https://api.github.com/repos/$Owner/$Repo?access_token=$GithubAPIToken"`
+				OwnerType=`echo $RepoInfo | python -c 'import json,sys;obj=json.load(sys.stdin);print obj["owner"]["type"]'`
+				IsPrivate=`echo $RepoInfo | python -c 'import json,sys;obj=json.load(sys.stdin);print obj["private"]'`
+
+				if [[ "$IsPrivate" == "True" ]]; then
+					Private=', "private":"true"'
+				fi
+
+				if [[ "$OwnerType" == "Organization" ]]; then
+					curl -sS "https://api.github.com/orgs/$Owner/repos?access_token=$GithubAPIToken" -d "{\"name\":\"$RepoName\"$Private}"
+				else
+					curl -sS "https://api.github.com/user/repos?access_token=$GithubAPIToken" -d "{\"name\":\"$RepoName\"$Private}"
+				fi
+			fi
+			
+			pushd "Malterlib/$1" > /dev/null
+			git remote add $RemoteName $NewRemoteURL || true
+			git pull --rebase $RemoteName master || true
+			git push $RemoteName master
+			popd > /dev/null
+		done
+	)
+	git submodule add -b master --name "$RepoName" "../$RepoName" Malterlib/$1
+	git config -f .gitmodules submodule.$RepoName.fetchRecurseSubmodules on-demand
+}
+
+Params="$@"
+
+case "$Command" in
+	generate)
+		./Malterlib/Tools/Scripts/MakeBuildSystem.sh $Params
+	;;
+	git)
+		git submodule foreach "git $Params || :"
+	;;
+	pgit)
+		SubPaths=`git submodule foreach --quiet "pwd"`
+		for Path in $SubPaths; do
+			pushd "$Path" > /dev/null
+			ModuleName="[`basename \"$Path\"`]"
+			ModuleName=`printf '%-20s' "$ModuleName"`
+
+			(git $Params 2>&1) | sed "s/^/$ModuleName/" 2>&1 &
+			popd > /dev/null
+		done
+		wait
+		echo Done...
+	;;
+	add_remote)
+		AddRemote $@
+	;;
+	add_local_remote)
+		AddLocalRemote $@
+	;;
+	add_module)
+		set -e
+		AddModule $@
+	;;
+	setup)
+		SetupMalterlib "$@"
+	;;
+	setup_mib_script)
+		SetupMibScript
+	;;
+	*)
+		echo $"Usage: $0 {generate, git, pgit, add_remote, add_module, setup, setup_mib_script}"
+		exit 1
+esac
+
