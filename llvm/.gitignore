@@ -1,1 +1,6 @@
 /RepoLock.MRepoState
+/compiler-rt
+/clang-tools-extra
+/clang
+/lldb
+/llvm

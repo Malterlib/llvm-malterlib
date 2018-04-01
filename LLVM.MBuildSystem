@@ -1,6 +1,12 @@
 // Copyright © 2015 Hansoft AB
 // Distributed under the MIT license, see license text in LICENSE.Malterlib
 
+Property
+{
+	MalterlibLLVMVersion 6.0
+	MalterlibLLVMVersionBranch "@(MalterlibLLVMVersion->Replace('.',''))"
+}
+
 Repository.GithubCompany "Malterlib"
 
 Repository
@@ -132,7 +138,7 @@ Repository
 	{
 		!!Repository.DefaultBranch ""
 	}
-	Submodule "true"
+	Submodule "false"
 	{
 		!!Repository.Submodule ""
 	}
@@ -170,9 +176,34 @@ Repository
 	}
 }
 
+%Repository "MalterlibBinaries"
+{
+	Property.RepoName "@(this.Identity).git"
+	Repository
+	{
+		Type Malterlib
+		DefaultBranch master
+		Location "@('Binaries/Malterlib'->MakeAbsolute())"
+		URL "@(Repository.MalterlibRoot)/@(RepoName)"
+		Remotes ""
+		Remotes "@(ExplodeList('@(MalterlibRemotePrefixes)', ';', 'MalterlibRemotePrefixesTemplate'));@(Repository.Remotes)"
+		{
+			!MalterlibRemotePrefixes  ""
+		}
+		Remotes "malterlib=https://github.com/Malterlib/MalterlibBinaries.git;@(Repository.Remotes)"
+		{
+			&
+			{
+				MalterlibUpstreamAccess true
+				!Repository.URL "https://github.com/Malterlib/@(RepoName)"
+			}
+		}
+	}
+}
+
 Repository.Remotes "upstream=https://github.com/llvm-mirror/@(this.Identity);upstream2=http://llvm.org/git/@(this.Identity)"
 Repository.Type External
-Repository.DefaultBranch master
+Repository.DefaultBranch "malterlib_@(MalterlibLLVMVersionBranch)"
 Repository.Location "@('llvm'->MakeAbsolute())/@(this.Identity)"
 
 %Repository "llvm"
