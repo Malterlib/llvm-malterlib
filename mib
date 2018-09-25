@@ -3,28 +3,59 @@
 # Distributed under the MIT license, see license text in LICENSE.Malterlib
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BASH_SOURCE_FULL="$DIR/${BASH_SOURCE[0]##*/}"
 
 set -e
 
 cd "$DIR"
 
-if [ -e .malterlib_no_core ] && [[ "$MalterlibNoCore" == "" ]]; then
-	MalterlibNoCore="true"
+if [ -e .malterlib_only_repos ] && [[ "$MalterlibOnlyRepositoryManagement" == "" ]]; then
+	export MalterlibOnlyRepositoryManagement=true
 fi
 
-if [ -e Binaries/Malterlib ]; then
-	find "$DIR/Binaries/Malterlib" -maxdepth 0 -type d -empty -exec rmdir {} \;
+if [ -e Binaries/Malterlib/LICENSE.Malterlib ]; then
+	rm -rf Binaries/Malterlib
 fi
 
-if [[ "$MalterlibNoCore" != "true" ]] && [ -e Malterlib/Core ]; then
+if [ -e Malterlib/Core ]; then
 	find "$DIR/Malterlib/Core" -maxdepth 0 -type d -empty -exec rmdir {} \;
 fi
 
-if [[ $SysName ==  MINGW* ]] || [[ $SysName ==  CYGWIN* ]] || [[ $SysName ==  windows* ]] ; then
-	mkdir -p /tmp
-fi
+function OutputInfo()
+{
+	echo $'\e[38;5;39m'"$@"$'\e[39m'
+}
 
-if ! [ -e Binaries/Malterlib ] || ([[ "$MalterlibNoCore" != "true" ]] && ! [ -e Malterlib/Core ]) ; then
+function OutputNote()
+{
+	echo $'\e[38;5;221m'"$@"$'\e[39m'
+}
+
+function OutputHeading()
+{
+	echo $'\e[38;5;118m'"$@"$'\e[39m'
+}
+
+function OutputError()
+{
+	echo $'\e[38;5;198m'"$@"$'\e[39m'
+}
+
+BootstrapInit=false
+function BootstrapInit()
+{
+	if $BootstrapInit; then
+		return
+	fi
+
+	BootstrapInit=true
+
+	echo 
+	OutputHeading '/¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\'
+	OutputHeading '| Bootstrapping Malterlib |'
+	OutputHeading '\_________________________/'
+	echo
+
 	# Make sure that lfs is installed
 	if ! git lfs > /dev/null ; then
 		echo Please install git lfs
@@ -35,38 +66,25 @@ if ! [ -e Binaries/Malterlib ] || ([[ "$MalterlibNoCore" != "true" ]] && ! [ -e 
 		git lfs install
 	fi
 
-	if [[ $SysName ==  MINGW* ]] || [[ $SysName ==  CYGWIN* ]] || [[ $SysName ==  windows* ]] ; then
+	if [[ "$MalterlibPlatform" ==  Windows ]]; then
 		git config --global core.symlinks true
 	fi
+}
 
-	function OutputInfo()
-	{
-		echo $'\e[38;5;39m'"$@"$'\e[39m'
-	}
+function ReportBootstrapDone()
+{
+	if ! $BootstrapInit; then
+		return
+	fi
 
-	function OutputNote()
-	{
-		echo $'\e[38;5;221m'"$@"$'\e[39m'
-	}
-
-	function OutputHeading()
-	{
-		echo $'\e[38;5;118m'"$@"$'\e[39m'
-	}
-
-	function OutputError()
-	{
-		echo $'\e[38;5;198m'"$@"$'\e[39m'
-	}
-
-	echo 
-	OutputHeading '/¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\'
-	OutputHeading '| Bootstrapping Malterlib |'
-	OutputHeading '\_________________________/'
+	OutputHeading '/¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\'
+	OutputHeading '| Successfully bootstrapped Malterlib |'
+	OutputHeading '\_____________________________________/'
 	echo
+}
 
-	mkdir -p Binaries
-
+function DetectRepoRoot()
+{
 	if [[ "$MalterlibRepoRoot" == "" ]]; then
 
 		OutputInfo "Determine MalterlibRepoRoot from *.MBuildSystem:"
@@ -94,12 +112,22 @@ if ! [ -e Binaries/Malterlib ] || ([[ "$MalterlibNoCore" != "true" ]] && ! [ -e 
 
 		echo 
 	fi
+}
 
-	if [[ "$MalterlibNoCore" != "true" ]] && ! [ -e Malterlib/Core ]; then
+function GetMalterlibCoreHash()
+{
+	cat *.MRepo | grep 'Malterlib/Core ' | cut '-d ' -f 2 || true
+}
+
+if ! [ -e Malterlib/Core ]; then
+	BootstrapInit
+	DetectRepoRoot
+
+	if ! [ -e Malterlib/Core ]; then
 
 		OutputInfo "Cloning Malterlib/Core"
 
-		GitHash=`cat *.MRepo | grep 'Malterlib/Core ' | cut '-d ' -f 2 || true`
+		GitHash=`GetMalterlibCoreHash`
 		if [[ "$GitHash" != "" ]]; then
 			echo "Found commit hash in *.MRepo files: `OutputNote "$GitHash"`"
 
@@ -115,82 +143,152 @@ if ! [ -e Binaries/Malterlib ] || ([[ "$MalterlibNoCore" != "true" ]] && ! [ -e 
 
 		echo
 	fi
+fi
 
-	if ! [ -e Binaries/Malterlib ]; then
+if ! [ -e ./Malterlib/Core/Scripts/Detect.sh ]; then
+	# Upgrade path
+	git -C Malterlib/Core fetch
 
-		OutputInfo "Cloning Binaries/Malterlib"
+	GitHash=`GetMalterlibCoreHash`
+	if [[ "$GitHash" == "" ]]; then
+		OutputError "Cloud not find commit hash in *.MRepo, cannot upgrade"
+		exit 1
+	fi
 
-		if [[ "$MalterlibNoCore" == "true" ]]; then
-			RepoFolder="./"
-			GitHash=`cat *.MRepo | grep '^Binaries/Malterlib ' | cut '-d ' -f 2 || true`
-		else
-			RepoFolder="Malterlib/Core/"
-			GitHash=`cat Malterlib/Core/*.MRepo | grep '\.\./\.\./Binaries/Malterlib ' | cut '-d ' -f 2 || true`
-		fi
+	if [[ "$MalterlibRepositoryHardReset" == "true" ]] || (git -C Malterlib/Core branch -r --contains HEAD > /dev/null && [ -z "$(git -C Malterlib/Core status --porcelain || echo no)" ]); then
+		git -C Malterlib/Core checkout -B master $GitHash
+	else
+		OutputError "Malterlib/Core is not clean, please resolve the situation before trying to upgrade"
+		exit 1
+	fi
+fi
+
+source ./Malterlib/Core/Scripts/Detect.sh
+if [[ "$MalterlibPlatform" ==  Windows ]]; then
+	mkdir -p /tmp
+fi
+
+MalterlibBinariesPath="Binaries/Malterlib/${MalterlibPlatform}/${MalterlibArch}"
+MalterlibBinariesRepo="MalterlibBinaries_${MalterlibPlatform}_${MalterlibArch}"
+
+if [ -e "$MalterlibBinariesPath" ]; then
+	find "$DIR/$MalterlibBinariesPath" -maxdepth 0 -type d -empty -exec rmdir {} \;
+fi
+
+BootstrapVersion="1"
+
+if ! [ -e "$MalterlibBinariesPath/Bootstrap.version" ] || [[ `cat "$MalterlibBinariesPath/Bootstrap.version"` != "$BootstrapVersion" ]]; then
+	echo Removing binaries because they are not compatible with current bootstrap process
+	rm -rf "$MalterlibBinariesPath"
+fi
+
+if ! [ -e "$MalterlibBinariesPath" ]; then
+	BootstrapInit
+	DetectRepoRoot
+
+	if ! [ -e "$MalterlibBinariesPath" ]; then
+
+		OutputInfo "Cloning $MalterlibBinariesPath"
+
+		RepoFolder="Malterlib/Core/"
+		GitHash=`cat Malterlib/Core/*.MRepo | grep "\\.\\./\\.\\./$MalterlibBinariesPath " | cut '-d ' -f 2 || true`
 
 		if [[ "$GitHash" != "" ]]; then
 			echo "Found commit hash in ${RepoFolder}*.MRepo files: `OutputNote "$GitHash"`"
 
-			git clone -n "$MalterlibRepoRoot/MalterlibBinaries.git" Binaries/Malterlib
-			pushd Binaries/Malterlib > /dev/null
+			git clone -n "$MalterlibRepoRoot/$MalterlibBinariesRepo.git" $MalterlibBinariesPath
+			pushd $MalterlibBinariesPath > /dev/null
 			git checkout -B master $GitHash
 			popd > /dev/null
 		else
 			OutputError "Cloud not find commit hash in ${RepoFolder}*.MRepo files using latest default branch"
 
-			git clone "$MalterlibRepoRoot/MalterlibBinaries.git" Binaries/Malterlib
+			git clone "$MalterlibRepoRoot/$MalterlibBinariesRepo.git" $MalterlibBinariesPath
 		fi
 
 		echo
 	fi
-
-	OutputHeading '/¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯\'
-	OutputHeading '| Successfully bootstrapped Malterlib |'
-	OutputHeading '\_____________________________________/'
-	echo
 fi
 
-SysName=$(uname -s)
+ReportBootstrapDone
 
-BinariesDir="$PWD/Binaries/Malterlib"
+ScriptsDir="$PWD/Malterlib/Core/Scripts"
 Command=$1
 shift
 
 while true; do
-
-	if [[ $SysName ==  MINGW* ]] || [[ $SysName ==  CYGWIN* ]] || [[ $SysName ==  windows* ]] ; then
-		DependencyFile=BuildSystem/Binaries/Binaries.MalterlibDependency
-
-		MToolSourceOnly=true source ./Binaries/Malterlib/MTool.sh
+	if [[ "$MalterlibPlatform" ==  Windows ]] || [[ "$MalterlibSafeMib" == "true" ]]; then
+		DependencyFile=BuildSystem/SafeMib/SafeMib.MalterlibDependency
 
 		if [ -e "$DependencyFile" ]; then
-			"$MToolExecutable" CheckDependencies Verbose=true "Directory=BuildSystem/Binaries"
+			"$MToolExecutable" CheckDependencies Verbose=true "Directory=BuildSystem/SafeMib"
 		fi
 
-		if ! [ -e BuildSystem/Binaries.updated ]; then
-			"$MToolExecutable" DiffCopy "Binaries/Malterlib/General/Windows" "BuildSystem/Binaries/General"
-			"$MToolExecutable" DiffCopy "Binaries/Malterlib/*.sh" "BuildSystem/Binaries" "" 0
-			"$MToolExecutable" TouchOrCreate "BuildSystem/Binaries.updated"
+		if ! [ -e BuildSystem/SafeMib/SafeMib.updated ]; then
+			echo Updating safe binaries
+
+			"$MToolExecutable" DiffCopy "$MalterlibBinariesPath/*" "BuildSystem/SafeMib/Binaries" "" 1 1
+			"$MToolExecutable" DiffCopy "Malterlib/Core/Scripts/*" "BuildSystem/SafeMib/Scripts" "" 1 1
+			"$MToolExecutable" TouchOrCreate "BuildSystem/SafeMib/SafeMib.updated"
 			ExcludePatterns="*/.git;*/.DS_Store"
-			"$MToolExecutable" BuildDependencies "OutputFile=$DependencyFile" "Output:BuildSystem/Binaries.updated" "Input:${BASH_SOURCE[0]}" "Find:Binaries/Malterlib/*;RIF;33;$ExcludePatterns"
+
+			if type MalterlibConvertPath > /dev/null; then
+				"$MToolExecutable" BuildDependencies "OutputFile=`MalterlibConvertPath \"$DIR/$DependencyFile\"`" "Output:`MalterlibConvertPath \"$DIR/BuildSystem/SafeMib/SafeMib.updated\"`" "Input:`MalterlibConvertPath \"$BASH_SOURCE_FULL\"`" "Find:`MalterlibConvertPath \"$MalterlibBinariesPath\"`/*;RIF;33;$ExcludePatterns" "Find:`MalterlibConvertPath \"$DIR/Malterlib/Core/Scripts\"`/*;RIF;33;$ExcludePatterns"
+			else
+				rm -f BuildSystem/SafeMib/SafeMib.updated
+			fi
 		fi
 
-		BinariesDir="$PWD/BuildSystem/Binaries"
+		export MalterlibBinariesDir="$PWD/BuildSystem/SafeMib/Binaries"
+		ScriptsDir="$PWD/BuildSystem/SafeMib/Scripts"
 	fi
+
+	function RunTests()
+	{
+		Start=$SECONDS
+
+		function OutputTime()
+		{
+			OutputNote "$((SECONDS-Start)) s"
+			Start=$SECONDS
+			echo
+		}
+
+		OutputInfo '[Generating]'
+		./mib generate Tests
+		source BuildSystem/SharedBuildSettings.sh
+		export MalterlibXCPrettyOptions="-t"
+		OutputTime
+
+		OutputInfo '[Building]'
+		./mib build Tests "$HostPlatform" "$HostArchitecture" "$1"
+		OutputTime
+
+		OutputInfo '[Testing]'
+		
+		if "$MalterlibDeployRoot/Tests/RunAllTests" --quiet ; then
+			OutputTime
+			OutputHeading Success
+		else
+			OutputTime
+			OutputError "Tests FAILED"
+			exit 1
+		fi
+	}
 
 	case "$Command" in
 		generate)
 			MissingSetup=false
-			if [[ $SysName ==  Darwin* ]] ; then
-				if [ -e ./Malterlib/Tools/SetupOSX/setup.sh ]; then
-					./Malterlib/Tools/SetupOSX/setup.sh CheckSetup
+			if [[ "$MalterlibPlatform" ==  OSX ]] ; then
+				if [ -e ./Malterlib/Core/Setup/OSX/setup.sh ]; then
+					./Malterlib/Core/Setup/OSX/setup.sh CheckSetup
 				else
 					MissingSetup=true
 				fi
 			fi
 
 			set +e
-			"$BinariesDir/Generate.sh" "$@"
+			"$ScriptsDir/Generate.sh" "$@"
 			MToolExit=$?
 			set -e
 			if [[ $MToolExit == 3 ]]; then
@@ -200,20 +298,30 @@ while true; do
 				exit $MToolExit
 			fi
 
-			if $MissingSetup && [[ $SysName ==  Darwin* ]] && [ -e ./Malterlib/Tools/SetupOSX/setup.sh ]; then
-				./Malterlib/Tools/SetupOSX/setup.sh CheckSetup
+			if $MissingSetup && [[ "$MalterlibPlatform" == OSX ]] && [ -e ./Malterlib/Core/Setup/OSX/setup.sh ]; then
+				./Malterlib/Core/Setup/OSX/setup.sh CheckSetup
 			fi
 		;;
 		setup_only)
 			exit 0
 		;;
 		setup)
-			if [[ $SysName ==  Darwin* ]] ; then
-				./Malterlib/Tools/SetupOSX/setup.sh "$@"
+			if [[ "$MalterlibPlatform" ==  OSX ]] ; then
+				./Malterlib/Core/Setup/OSX/setup.sh "$@"
 			fi
 		;;
 		build)
 			./Malterlib/Core/BuildScripts/BuildWorkspace.sh "$@"
+		;;
+		test)
+			Config=Debug
+			if [[ "$1" != "" ]]; then
+				Config="$1"
+			fi
+			RunTests "$Config"
+		;;
+		test_release)
+			RunTests "Release (Tests)"
 		;;
 		build_target)
 			./Malterlib/Core/BuildScripts/BuildTarget.sh "$@"
@@ -229,7 +337,7 @@ while true; do
 		;;
 		*)
 			set +e
-			MalterlibTool=true "$BinariesDir/Generate.sh" "$Command" "$@"
+			MalterlibTool=true "$ScriptsDir/Generate.sh" "$Command" "$@"
 			MToolExit=$?
 			set -e
 			if [[ $MToolExit == 3 ]]; then

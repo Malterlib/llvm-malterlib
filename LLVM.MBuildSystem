@@ -1,213 +1,43 @@
 // Copyright © 2015 Hansoft AB
 // Distributed under the MIT license, see license text in LICENSE.Malterlib
 
+
 Property
 {
-	MalterlibLLVMVersion 6.0
+	MalterlibLLVMVersion 7.0
 	MalterlibLLVMVersionBranch "@(MalterlibLLVMVersion->Replace('.',''))"
 }
 
-Repository.GithubCompany "Malterlib"
+Import "Malterlib/Core/Malterlib.MHeader"
 
-Repository
+Repository 
 {
-	DefaultRoot "https://github.com/@(Repository.GithubCompany)"
-	{
-		&
-		{
-			Repository.DefaultRoot ""
-			!Repository.GithubCompany ""
-		}
-	}
+	!!LLVMRepo true
 
-	DefaultPrefix "@(Repository.GithubCompany)_"
-	{
-		&
-		{
-			Repository.DefaultPrefix ""
-			!Repository.GithubCompany ""
-		}
-	}
-
-	DefaultLocationPrefix "@(Repository.DefaultPrefix->Replace('_', '/'))"
-	{
-		!!Repository.DefaultLocationPrefix ""
-	}
-
-	Type "Direct"
-	{
-		!!Repository.Type ""
-	}
-
-	MalterlibRoot "https://github.com/Malterlib"
-	{
-		!!Repository.MalterlibRoot ""
-	}
-
-	ExternalRoot "https://github.com/Malterlib"
-	{
-		!!Repository.ExternalRoot ""
-	}
-
-	ConfigFile "@(this.IdentityPath->GetPath())/@(Repository.Type).MRepo"
-	{
-		!!Repository.ConfigFile ""
-	}
-	StateFile "@(this.IdentityPath->GetPath())/@(Repository.Type).MRepoState"
-	{
-		!!Repository.StateFile ""
-	}
-	Prefix "@(Repository.DefaultPrefix)"
-	{
-		&
-		{
-			Repository.Prefix ""
-			!Repository.DefaultPrefix ""
-		}
-	}
-	URL "@(Repository.ExternalRoot)/@(this.Identity).git"
-	{
-		&
-		{
-			Repository.URL ""
-			Repository.Type External
-		}
-	}
-	URL "@(Repository.MalterlibRoot)/Malterlib_@(this.Identity).git"
-	{
-		&
-		{
-			Repository.URL ""
-			Repository.Type Malterlib
-		}
-	}
-	URL "@(Repository.DefaultRoot)/@(Repository.Prefix)@(this.Identity).git"
-	{
-		&
-		{
-			Repository.URL ""
-			Repository.Type Direct
-		}
-	}
-	Location "@('../../../External'->MakeAbsolute())/@(this.Identity)"
-	{
-		&
-		{
-			Repository.Location ""
-			Repository.Type External
-		}
-	}
-	Location "@('../../../Malterlib'->MakeAbsolute())/@(this.Identity)"
-	{
-		&
-		{
-			Repository.Location ""
-			Repository.Type Malterlib
-		}
-	}
-
-	LocationPrefix "@(Repository.DefaultLocationPrefix)"
-	{
-		&
-		{
-			Repository.LocationPrefix ""
-			!Repository.DefaultLocationPrefix ""
-		}
-	}
-
-	CalcLocation "../../../@(Repository.LocationPrefix)@(this.Identity)"
-	
-	Location "@(Repository.CalcLocation->MakeAbsolute())"
-	{
-		&
-		{
-			Repository.Location ""
-			Repository.Type Direct
-			!Repository.SubmodulePrefix "nthoenuth"
-		}
-	}
-	DefaultBranch "malterlib"
-	{
-		&
-		{
-			Repository.DefaultBranch ""
-			Repository.Type External
-		}
-	}
-	DefaultBranch "master"
-	{
-		!!Repository.DefaultBranch ""
-	}
-	Submodule "false"
-	{
-		!!Repository.Submodule ""
-	}
-	SubmodulePrefix "@(Repository.DefaultPrefix)"
-	{
-		&
-		{
-			Repository.SubmodulePrefix ""
-			!Repository.DefaultPrefix ""
-		}
-	}
-	SubmoduleName "External_@(this.Identity)"
-	{
-		&
-		{
-			Repository.SubmoduleName ""
-			Repository.Type External
-		}
-	}
-	SubmoduleName "Malterlib_@(this.Identity)"
-	{
-		&
-		{
-			Repository.SubmoduleName ""
-			Repository.Type Malterlib
-		}
-	}
-	SubmoduleName "@(Repository.SubmodulePrefix)@(this.Identity)"
-	{
-		&
-		{
-			Repository.SubmoduleName ""
-			Repository.Type Direct
-		}
-	}
+	GithubCompany "Malterlib"
+	Remotes "upstream=https://github.com/llvm-mirror/@(this.Identity);upstream2=http://llvm.org/git/@(this.Identity)"
+	Type External
+	DefaultBranch "malterlib_@(MalterlibLLVMVersionBranch)"
+	Location "@('llvm'->MakeAbsolute())/@(this.Identity)"
 }
-
-%Repository "MalterlibBinaries"
-{
-	Property.RepoName "@(this.Identity).git"
-	Repository
-	{
-		Type Malterlib
-		DefaultBranch master
-		Location "@('Binaries/Malterlib'->MakeAbsolute())"
-		URL "@(Repository.MalterlibRoot)/@(RepoName)"
-		Remotes ""
-		Remotes "@(ExplodeList('@(MalterlibRemotePrefixes)', ';', 'MalterlibRemotePrefixesTemplate'));@(Repository.Remotes)"
-		{
-			!MalterlibRemotePrefixes  ""
-		}
-		Remotes "malterlib=https://github.com/Malterlib/MalterlibBinaries.git;@(Repository.Remotes)"
-		{
-			&
-			{
-				MalterlibUpstreamAccess true
-				!Repository.URL "https://github.com/Malterlib/@(RepoName)"
-			}
-		}
-	}
-}
-
-Repository.Remotes "upstream=https://github.com/llvm-mirror/@(this.Identity);upstream2=http://llvm.org/git/@(this.Identity)"
-Repository.Type External
-Repository.DefaultBranch "malterlib_@(MalterlibLLVMVersionBranch)"
-Repository.Location "@('llvm'->MakeAbsolute())/@(this.Identity)"
 
 %Repository "llvm"
+{
+	Property.LLVMRepo true
+}
 %Repository "clang"
+{
+	Property.LLVMRepo true
+}
 %Repository "clang-tools-extra"
+{
+	Property.LLVMRepo true
+}
 %Repository "compiler-rt"
+{
+	Property.LLVMRepo true
+}
 %Repository "lldb"
+{
+	Property.LLVMRepo true
+}
