@@ -15,7 +15,7 @@ Repository
 	!!LLVMRepo true
 
 	GithubCompany "Malterlib"
-	Remotes "upstream=https://github.com/llvm-mirror/@(this.Identity);upstream2=http://llvm.org/git/@(this.Identity)"
+	Remotes "upstream=https://github.com/llvm-mirror/@(this.Identity);upstream2=http://llvm.org/git/@(this.Identity);apple=https://github.com/apple/swift-@(this.Identity)"
 	Type External
 	DefaultBranch "malterlib_@(MalterlibLLVMVersionBranch)"
 	Location "@('llvm'->MakeAbsolute())/@(this.Identity)"
