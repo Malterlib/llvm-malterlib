@@ -10,15 +10,24 @@ Property
 
 Import "Malterlib/CoreRepository/Malterlib.MHeader"
 
-Repository 
+Repository
 {
 	!!LLVMRepo true
 
 	GithubCompany "Malterlib"
-	Remotes "upstream=https://github.com/llvm-mirror/@(this.Identity);upstream2=http://llvm.org/git/@(this.Identity);apple=https://github.com/apple/swift-@(this.Identity)"
+	Remotes "upstream=https://github.com/llvm-mirror/@(this.Identity);upstream2=http://llvm.org/git/@(this.Identity)"
+	Remotes "apple=https://github.com/apple/swift-@(this.Identity);@(Repository.Remotes)"
+	{
+		!this.Identity "lld"
+	}
 	Type External
 	DefaultBranch "malterlib_@(MalterlibLLVMVersionBranch)"
 	Location "@('llvm'->MakeAbsolute())/@(this.Identity)"
+}
+
+%Repository "lld"
+{
+	Property.LLVMRepo true
 }
 
 %Repository "llvm"

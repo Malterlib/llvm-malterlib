@@ -72,7 +72,7 @@ BuildCompiler()
 		ExtraCMake="-G Ninja"
 	fi
 
-	local Projects="clang"
+	local Projects="clang;lld"
 	echo Projects: $Projects
 
 	if [ "$EnableLLDB" == "ON" ] ; then

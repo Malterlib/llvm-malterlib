@@ -1,5 +1,6 @@
 llvm/clang c1706d41ba6bc218789059821235d7c8bf73f0d9
 llvm/clang-tools-extra cb378eb3f37c25ae85546737c8ad442f3378e7e9
 llvm/compiler-rt 9b0f7e8558a53f2863535b69519b6746f8c24a3f
+llvm/lld 12d2e07ee2dcb7bd0d8aa2cbddd700ed09c81edb
 llvm/lldb 5f3811009ec79b87e7e0ed33e68fcfe42884d6e1
 llvm/llvm 72c4be4a58757763e07f9190c0c3ef5ac246ecfa
