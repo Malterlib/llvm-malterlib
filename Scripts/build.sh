@@ -89,7 +89,10 @@ BuildCompiler()
 	echo Number of CPUs: ${NCPUS}
 
 	$Generator -j${NCPUS}
-	
+
+	SetupLibCxxDirsInclude "$OutputDirectory"
+	SetupLibCxxDirsLib "$OutputDirectory"
+
 	if [ "$RunTests" == "ON" ] ; then
 		$Generator -j${NCPUS} check-all
 	fi
