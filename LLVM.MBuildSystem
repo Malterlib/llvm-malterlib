@@ -4,7 +4,7 @@
 
 Property
 {
-	MalterlibLLVMVersion 7.0
+	MalterlibLLVMVersion 8.0
 	MalterlibLLVMVersionBranch "@(MalterlibLLVMVersion->Replace('.',''))"
 }
 
