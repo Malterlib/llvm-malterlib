@@ -4,23 +4,26 @@ set -e
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 echo Directory: $PWD
+ScriptDir="$PWD"
 
 SetupLibCxxDirsInclude()
 {
 	local XcodeLocation=$(xcode-select --print-path)
-	local LibPath=../build/$1/include/c++
-	mkdir -p $LibPath
-	if [ -L "$LibPath/v1" ] ; then
-		rm "$LibPath/v1"
+	local IncludePath="$ScriptDir/../build/$1/include/c++"
+	echo "IncludePath: $IncludePath"
+	mkdir -p "$IncludePath"
+	if [ -L "$IncludePath/v1" ] ; then
+		rm "$IncludePath/v1"
 	fi
-	ln -s "$XcodeLocation/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1" "$LibPath/v1"
+	ln -s "$XcodeLocation/Toolchains/XcodeDefault.xctoolchain/usr/include/c++/v1" "$IncludePath/v1"
 }
 
 SetupLibCxxDirsLib()
 {
 	local XcodeLocation=$(xcode-select --print-path)
-	local LibPath=../build/$1/lib/c++
-	mkdir -p $LibPath
+	local LibPath="$ScriptDir/../build/$1/lib/c++"
+	echo "LibPath: $LibPath"
+	mkdir -p "$LibPath"
 	if [ -L "$LibPath/v1" ] ; then
 		rm "$LibPath/v1"
 	fi
@@ -83,7 +86,7 @@ BuildCompiler()
 
 	ExtraCMake="$ExtraCMake -DLLVM_ENABLE_PROJECTS=$Projects"
 
-	(export CC=/usr/bin/clang; export CXX=/usr/bin/clang++; cmake $ExtraCMake -DLIBCLANG_BUILD_STATIC:BOOL=ON -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo -DLLVM_ENABLE_ASSERTIONS:BOOL=$EnableAsserts -DCLANG_INCLUDE_TESTS:BOOL=$EnableAsserts "-DCMAKE_CXX_FLAGS:STRING=-stdlib=libc++" "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" "-DCMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" ../../llvm/llvm)
+	(export CC=/usr/bin/clang; export CXX=/usr/bin/clang++; cmake $ExtraCMake -DLIBCLANG_BUILD_STATIC:BOOL=ON -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo -DLLVM_ENABLE_ASSERTIONS:BOOL=$EnableAsserts -DCLANG_INCLUDE_TESTS:BOOL=$EnableAsserts "-DCMAKE_CXX_FLAGS:STRING=-stdlib=libc++" "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" "-DCMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" ../../llvm-project/llvm)
 
 	NCPUS=`sysctl -n hw.ncpu`
 	echo Number of CPUs: ${NCPUS}

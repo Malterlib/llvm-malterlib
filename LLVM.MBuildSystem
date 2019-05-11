@@ -1,10 +1,9 @@
 // Copyright © 2018 Nonna Holding AB
 // Distributed under the MIT license, see license text in LICENSE.Malterlib
 
-
 Property
 {
-	MalterlibLLVMVersion 8.0
+	MalterlibLLVMVersion 9.0
 	MalterlibLLVMVersionBranch "@(MalterlibLLVMVersion->Replace('.',''))"
 }
 
@@ -15,38 +14,13 @@ Repository
 	!!LLVMRepo true
 
 	GithubCompany "Malterlib"
-	Remotes "upstream=https://github.com/llvm-mirror/@(this.Identity);upstream2=http://llvm.org/git/@(this.Identity)"
-	Remotes "apple=https://github.com/apple/swift-@(this.Identity);@(Repository.Remotes)"
-	{
-		!this.Identity "lld"
-	}
+	Remotes "upstream=https://github.com/llvm/@(this.Identity)"
 	Type External
 	DefaultBranch "malterlib_@(MalterlibLLVMVersionBranch)"
-	Location "@('llvm'->MakeAbsolute())/@(this.Identity)"
+	Location "@('.'->MakeAbsolute())/@(this.Identity)"
 }
 
-%Repository "lld"
-{
-	Property.LLVMRepo true
-}
-
-%Repository "llvm"
-{
-	Property.LLVMRepo true
-}
-%Repository "clang"
-{
-	Property.LLVMRepo true
-}
-%Repository "clang-tools-extra"
-{
-	Property.LLVMRepo true
-}
-%Repository "compiler-rt"
-{
-	Property.LLVMRepo true
-}
-%Repository "lldb"
+%Repository "llvm-project"
 {
 	Property.LLVMRepo true
 }
