@@ -73,6 +73,8 @@ BuildCompiler()
 	local ExtraCMake=
 	if [[ "$Generator" == "ninja" ]] ; then
 		ExtraCMake="-G Ninja"
+	elif [[ "$Generator" != "make" ]] ; then
+		ExtraCMake="-G $Generator"
 	fi
 
 	local Projects="clang;lld"
@@ -110,20 +112,7 @@ if [[ $# == 0 ]]; then
 	exit
 fi
 
-LongOptions='enable-lldb,enable-asserts,run-tests,output:,generator:'
-
-# -temporarily store output to be able to check for errors
-# -activate advanced mode getopt quoting e.g. via “--options”
-# -pass arguments only via   -- "$@"   to separate them correctly
-ParsedOptions=$(getopt --longoptions "$LongOptions" --name "$0" -- "$@")
-if [[ $? -ne 0 ]]; then
-    exit 2
-fi
-
-eval set -- "$ParsedOptions"
-
-# now enjoy the options in order and nicely split until we see --
-while true; do
+while [[ $# != 0 ]]; do
     case "$1" in
         --enable-lldb)
             EnableLLDB=ON
@@ -146,11 +135,11 @@ while true; do
             shift 2
             ;;
         --)
-            echo "Unrecognized option"
+            echo "Unrecognized option $1"
             exit 3
             ;;
         *)
-            echo "Programming error"
+            echo "Programming error $1"
             exit 3
             ;;
     esac
