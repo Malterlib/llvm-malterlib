@@ -84,7 +84,7 @@ BuildCompiler()
 		Projects="$Projects;lldb"
 	fi
 
-	#local Projects="$Projects;clang-tools-extra;compiler-rt"
+	local Projects="$Projects;compiler-rt"
 
 	ExtraCMake="$ExtraCMake -DLLVM_ENABLE_PROJECTS=$Projects"
 
