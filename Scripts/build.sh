@@ -31,7 +31,7 @@ SetupLibCxxDirsLib()
 }
 
 EnableAsserts=OFF
-Generator=make
+Generator=ninja
 EnableLLDB=OFF
 OutputDirectory=main
 RunTests=OFF
@@ -84,7 +84,7 @@ BuildCompiler()
 		Projects="$Projects;lldb"
 	fi
 
-	local Projects="$Projects;compiler-rt"
+	local Projects="$Projects;compiler-rt;libcxx;libcxxabi;polly;libunwind"
 
 	ExtraCMake="$ExtraCMake -DLLVM_ENABLE_PROJECTS=$Projects"
 
@@ -104,8 +104,6 @@ BuildCompiler()
 
 	popd
 }
-
-Generator=make
 
 if [[ $# == 0 ]]; then
 	BuildCompiler
