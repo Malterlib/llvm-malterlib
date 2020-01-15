@@ -93,7 +93,7 @@ BuildCompiler()
 	NCPUS=`sysctl -n hw.ncpu`
 	echo Number of CPUs: ${NCPUS}
 
-	$Generator -j${NCPUS}
+	time $Generator -j${NCPUS}
 
 	SetupLibCxxDirsInclude "$OutputDirectory"
 	SetupLibCxxDirsLib "$OutputDirectory"
