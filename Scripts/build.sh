@@ -38,8 +38,8 @@ RunTests=OFF
 
 BuildCompiler()
 {
-	SetupLibCxxDirsInclude "$OutputDirectory"
-	SetupLibCxxDirsLib "$OutputDirectory"
+	#SetupLibCxxDirsInclude "$OutputDirectory"
+	#SetupLibCxxDirsLib "$OutputDirectory"
 
 	CurrentVersion=`cat ../.versiontag`
 
@@ -95,8 +95,8 @@ BuildCompiler()
 
 	time $Generator -j${NCPUS}
 
-	SetupLibCxxDirsInclude "$OutputDirectory"
-	SetupLibCxxDirsLib "$OutputDirectory"
+	#SetupLibCxxDirsInclude "$OutputDirectory"
+	#SetupLibCxxDirsLib "$OutputDirectory"
 
 	if [ "$RunTests" == "ON" ] ; then
 		$Generator -j${NCPUS} check-all
