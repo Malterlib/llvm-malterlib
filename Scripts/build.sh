@@ -84,9 +84,9 @@ BuildCompiler()
 		Projects="$Projects;lldb"
 	fi
 
-	local Projects="$Projects;compiler-rt;libcxx;libcxxabi;polly;libunwind"
+	local Projects="$Projects;libcxx;libcxxabi;polly" #compiler-rt;
 
-	ExtraCMake="$ExtraCMake -DLLVM_ENABLE_PROJECTS=$Projects"
+	ExtraCMake="$ExtraCMake -DLLVM_ENABLE_PROJECTS=$Projects -DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF"
 
 	(export CC=/usr/bin/clang; export CXX=/usr/bin/clang++; cmake $ExtraCMake -DLIBCLANG_BUILD_STATIC:BOOL=ON -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo -DLLVM_ENABLE_ASSERTIONS:BOOL=$EnableAsserts -DCLANG_INCLUDE_TESTS:BOOL=$EnableAsserts "-DCMAKE_CXX_FLAGS:STRING=-stdlib=libc++" "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" "-DCMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" ../../llvm-project/llvm)
 
