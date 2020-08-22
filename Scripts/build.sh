@@ -84,7 +84,7 @@ BuildCompiler()
 		Projects="$Projects;lldb"
 	fi
 
-	local Projects="$Projects;libcxx;libcxxabi;polly" #compiler-rt;
+	local Projects="$Projects;compiler-rt;libcxx;libcxxabi;polly;libunwind"
 
 	ExtraCMake="$ExtraCMake -DLLVM_ENABLE_PROJECTS=$Projects -DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF"
 
