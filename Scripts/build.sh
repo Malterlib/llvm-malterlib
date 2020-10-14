@@ -88,9 +88,15 @@ BuildCompiler()
 
 	ExtraCMake="$ExtraCMake -DLLVM_ENABLE_PROJECTS=$Projects -DCOMPILER_RT_INCLUDE_TESTS:BOOL=OFF"
 
-	(export CC=/usr/bin/clang; export CXX=/usr/bin/clang++; cmake $ExtraCMake -DLIBCLANG_BUILD_STATIC:BOOL=ON -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo -DLLVM_ENABLE_ASSERTIONS:BOOL=$EnableAsserts -DCLANG_INCLUDE_TESTS:BOOL=$EnableAsserts "-DCMAKE_CXX_FLAGS:STRING=-stdlib=libc++" "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" "-DCMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" ../../llvm-project/llvm)
+	if [ "$(uname)" == "Darwin" ]; then
+		export CC=/usr/bin/clang
+		export CXX=/usr/bin/clang++;
+		ExtraCMake="$ExtraCMake -DCMAKE_CXX_FLAGS:STRING=-stdlib=libc++"
+	fi
 
-	NCPUS=`sysctl -n hw.ncpu`
+	(cmake $ExtraCMake -DLIBCLANG_BUILD_STATIC:BOOL=ON -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo -DLLVM_ENABLE_ASSERTIONS:BOOL=$EnableAsserts -DCLANG_INCLUDE_TESTS:BOOL=$EnableAsserts "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" "-DCMAKE_C_FLAGS_RELWITHDEBINFO:STRING=-O3 -g $ExtraFlags" ../../llvm-project/llvm)
+
+	NCPUS=`sysctl -n hw.ncpu || nproc`
 	echo Number of CPUs: ${NCPUS}
 
 	time $Generator -j${NCPUS}
