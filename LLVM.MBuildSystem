@@ -3,8 +3,9 @@
 
 Property
 {
-	MalterlibLLVMVersion 12.0
-	MalterlibLLVMVersionBranch "@(MalterlibLLVMVersion->Replace('.',''))"
+	MalterlibLLVMVersion define string = "12.0"
+	MalterlibLLVMVersionBranch define string = `@(MalterlibLLVMVersion->Replace(".", ""))`
+	LLVMRepo define bool = false
 }
 
 Import "Malterlib/CoreRepository/Malterlib.MHeader"
@@ -14,10 +15,10 @@ Repository
 	!!LLVMRepo true
 
 	GithubCompany "Malterlib"
-	Remotes "upstream=https://github.com/llvm/@(this.Identity)"
-	Type External
-	DefaultBranch "malterlib_@(MalterlibLLVMVersionBranch)"
-	Location "@('.'->MakeAbsolute())/@(this.Identity)"
+	Remotes =+ {Name: "upstream", URL: `https://github.com/llvm/@(this.Identity)`}
+	Type "External"
+	DefaultBranch `malterlib_@(MalterlibLLVMVersionBranch)`
+	Location `@("."->MakeAbsolute())/@(this.Identity)`
 }
 
 %Repository "llvm-project"
