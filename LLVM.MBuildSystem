@@ -3,7 +3,7 @@
 
 Property
 {
-	MalterlibLLVMVersion define string = "12.0"
+	MalterlibLLVMVersion define string = "13.0"
 	MalterlibLLVMVersionBranch define string = `@(MalterlibLLVMVersion->Replace(".", ""))`
 	LLVMRepo define bool = false
 }
