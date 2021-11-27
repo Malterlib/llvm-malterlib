@@ -77,7 +77,7 @@ BuildCompiler()
 		ExtraCMake="-G $Generator"
 	fi
 
-	local Projects="clang;lld"
+	local Projects="clang;lld;clang-tools-extra"
 	echo Projects: $Projects
 
 	if [ "$EnableLLDB" == "ON" ] ; then
